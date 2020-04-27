@@ -1864,7 +1864,7 @@ static bool kswapd_is_running(pg_data_t *pgdat)
 	return pgdat->kswapd && (pgdat->kswapd->state == TASK_RUNNING);
 }
 
-static int proactive_compaction_score_zone(struct zone *zone)
+static int fragmentation_score_zone(struct zone *zone)
 {
 	unsigned long score;
 
@@ -1875,7 +1875,7 @@ static int proactive_compaction_score_zone(struct zone *zone)
 	return score;
 }
 
-static int proactive_compaction_score_node(pg_data_t *pgdat)
+static int fragmentation_score_node(pg_data_t *pgdat)
 {
 	unsigned long score = 0;
 	int zoneid;
@@ -1884,13 +1884,13 @@ static int proactive_compaction_score_node(pg_data_t *pgdat)
 		struct zone *zone;
 
 		zone = &pgdat->node_zones[zoneid];
-		score += proactive_compaction_score_zone(zone);
+		score += fragmentation_score_zone(zone);
 	}
 
 	return score;
 }
 
-static int proactive_compaction_score_wmark(pg_data_t *pgdat, bool low)
+static int fragmentation_score_wmark(pg_data_t *pgdat, bool low)
 {
 	int wmark_low;
 
@@ -1905,8 +1905,8 @@ static bool should_proactive_compact_node(pg_data_t *pgdat)
 	if (!compaction_proactiveness || kswapd_is_running(pgdat))
 		return false;
 
-	wmark_high = proactive_compaction_score_wmark(pgdat, false);
-	return proactive_compaction_score_node(pgdat) > wmark_high;
+	wmark_high = fragmentation_score_wmark(pgdat, false);
+	return fragmentation_score_node(pgdat) > wmark_high;
 }
 
 static enum compact_result __compact_finished(struct compact_control *cc)
@@ -1943,8 +1943,8 @@ static enum compact_result __compact_finished(struct compact_control *cc)
 		if (kswapd_is_running(pgdat))
 			return COMPACT_PARTIAL_SKIPPED;
 
-		score = proactive_compaction_score_zone(cc->zone);
-		wmark_low = proactive_compaction_score_wmark(pgdat, true);
+		score = fragmentation_score_zone(cc->zone);
+		wmark_low = fragmentation_score_wmark(pgdat, true);
 
 		if (score > wmark_low)
 			ret = COMPACT_CONTINUE;
@@ -2833,9 +2833,9 @@ static int kcompactd(void *p)
 				proactive_defer--;
 				continue;
 			}
-			prev_score = proactive_compaction_score_node(pgdat);
+			prev_score = fragmentation_score_node(pgdat);
 			proactive_compact_node(pgdat);
-			score = proactive_compaction_score_node(pgdat);
+			score = fragmentation_score_node(pgdat);
 			proactive_defer = score < prev_score ?
 					0 : 1 << COMPACT_MAX_DEFER_SHIFT;
 		}
