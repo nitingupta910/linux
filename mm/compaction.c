@@ -32,7 +32,7 @@
  *
  * This tunable determines how aggressively the kernel
  * should compact memory in the background. It takes
- * values in range [0, 100].
+ * values in the range [0, 100].
  */
 static unsigned int compaction_proactiveness = 20;
 
@@ -60,6 +60,9 @@ static inline void count_compact_events(enum vm_event_item item, long delta)
 #define pageblock_start_pfn(pfn)	block_start_pfn(pfn, pageblock_order)
 #define pageblock_end_pfn(pfn)		block_end_pfn(pfn, pageblock_order)
 
+/*
+ * Fragmentation score check interval for proactive compaction purposes. 
+ */
 static const int HPAGE_FRAG_CHECK_INTERVAL_MSEC = 500;
 
 static unsigned long release_freepages(struct list_head *freelist)
@@ -1873,15 +1876,14 @@ static bool kswapd_is_running(pg_data_t *pgdat)
 }
 
 /*
- * A zone's fragmentation score is the external fragmentation
- * wrt to the HUGETLB_PAGE_ORDER scaled by the zone's size. It
- * returns a value in range [0, 100].
- *
- * The scaling factor ensures that proactive compaction focuses
- * on larger zones like ZONE_NORMAL, rather than smaller, specialized
- * zones like ZONE_DMA32. For smaller zones, the score value
- * remains close to zero, and thus never exceeds the high
- * threshold for proactive compaction.
+ * A zone's fragmentation score is the external fragmentation wrt to the
+ * HUGETLB_PAGE_ORDER scaled by the zone's size. It returns a value in the
+ * range [0, 100].
+
+ * The scaling factor ensures that proactive compaction focuses on larger
+ * zones like ZONE_NORMAL, rather than smaller, specialized zones like
+ * ZONE_DMA32. For smaller zones, the score value remains close to zero,
+ * and thus never exceeds the high threshold for proactive compaction.
  */
 static int fragmentation_score_zone(struct zone *zone)
 {
@@ -1895,11 +1897,11 @@ static int fragmentation_score_zone(struct zone *zone)
 }
 
 /*
- * The per-node proactive (background) compaction process is started
- * by its corresponding kcompactd thread when the node's fragmentation
- * score exceeds the high threshold. The compaction process remains
- * active till the node's score falls below the low threshold, or
- * one of the back-off conditions is met.
+ * The per-node proactive (background) compaction process is started by its
+ * corresponding kcompactd thread when the node's fragmentation score
+ * exceeds the high threshold. The compaction process remains active till
+ * the node's score falls below the low threshold, or one of the back-off
+ * conditions is met.
  */
 static int fragmentation_score_node(pg_data_t *pgdat)
 {
