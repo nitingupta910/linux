@@ -14,7 +14,7 @@ The process of proactive compaction is controlled by a single tunable:
 
         /sys/kernel/mm/compaction/proactiveness
 
-This tunable takes a values in range [1, 100] with a default value of
+This tunable takes a values in range [0, 100] with a default value of
 20. This tunable determines how aggressively compaction is done in the
 background. Setting it to 0 disables proactive compaction.
 

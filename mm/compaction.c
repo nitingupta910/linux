@@ -2514,13 +2514,13 @@ enum compact_result try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
 }
 
 /*
- * Compact all zones within a node till it's fragmentation score
- * reaches within proactive compaction thresholds (as determined
- * by the proactiveness tunable).
+ * Compact all zones within a node till each zone's fragmentation score
+ * reaches within proactive compaction thresholds (as determined by the
+ * proactiveness tunable).
  *
- * It is possible that the function returns before reaching score
- * targets due to various back-off conditions, such as, contention
- * on per-node or per-zone locks.
+ * It is possible that the function returns before reaching score targets
+ * due to various back-off conditions, such as, contention on per-node or
+ * per-zone locks.
  */
 static void proactive_compact_node(pg_data_t *pgdat)
 {
