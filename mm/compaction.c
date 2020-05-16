@@ -26,16 +26,6 @@
 #include "internal.h"
 
 #ifdef CONFIG_COMPACTION
-/*
- * Tunable for proactive compaction, exposed via sysfs:
- *	/sys/kernel/mm/compaction/proactiveness
- *
- * This tunable determines how aggressively the kernel
- * should compact memory in the background. It takes
- * values in the range [0, 100].
- */
-static unsigned int compaction_proactiveness = 20;
-
 static inline void count_compact_event(enum vm_event_item item)
 {
 	count_vm_event(item);
@@ -1922,7 +1912,7 @@ static int fragmentation_score_wmark(pg_data_t *pgdat, bool low)
 {
 	int wmark_low;
 
-	wmark_low = 100 - compaction_proactiveness;
+	wmark_low = 100 - sysctl_compaction_proactiveness;
 	return low ? wmark_low : min(wmark_low + 10, 100);
 }
 
@@ -1930,7 +1920,7 @@ static bool should_proactive_compact_node(pg_data_t *pgdat)
 {
 	int wmark_high;
 
-	if (!compaction_proactiveness || kswapd_is_running(pgdat))
+	if (!sysctl_compaction_proactiveness || kswapd_is_running(pgdat))
 		return false;
 
 	wmark_high = fragmentation_score_wmark(pgdat, false);
@@ -2599,6 +2589,13 @@ static void compact_nodes(void)
 int sysctl_compact_memory;
 
 /*
+ * Tunable for proactive compaction. It determines how
+ * aggressively the kernel should compact memory in the
+ * background. It takes values in the range [0, 100].
+ */
+int sysctl_compaction_proactiveness = 20;
+
+/*
  * This is the entry point for compacting all nodes via
  * /proc/sys/vm/compact_memory
  */
@@ -2639,63 +2636,6 @@ void compaction_unregister_node(struct node *node)
 	return device_remove_file(&node->dev, &dev_attr_compact);
 }
 #endif /* CONFIG_SYSFS && CONFIG_NUMA */
-
-#ifdef CONFIG_SYSFS
-
-#define COMPACTION_ATTR_RO(_name) \
-	static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
-
-#define COMPACTION_ATTR(_name) \
-	static struct kobj_attribute _name##_attr = \
-		__ATTR(_name, 0644, _name##_show, _name##_store)
-
-static struct kobject *compaction_kobj;
-
-static ssize_t proactiveness_store(struct kobject *kobj,
-		struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int err;
-	unsigned long input;
-
-	err = kstrtoul(buf, 10, &input);
-	if (err)
-		return err;
-	if (input > 100)
-		return -EINVAL;
-
-	compaction_proactiveness = input;
-	return count;
-}
-
-static ssize_t proactiveness_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-{
-	return sprintf(buf, "%u\n", compaction_proactiveness);
-}
-
-COMPACTION_ATTR(proactiveness);
-
-static struct attribute *compaction_attrs[] = {
-	&proactiveness_attr.attr,
-	NULL,
-};
-
-static const struct attribute_group compaction_attr_group = {
-	.attrs = compaction_attrs,
-};
-
-static void __init compaction_sysfs_init(void)
-{
-	compaction_kobj = kobject_create_and_add("compaction", mm_kobj);
-	if (!compaction_kobj)
-		return;
-
-	if (sysfs_create_group(compaction_kobj, &compaction_attr_group)) {
-		kobject_put(compaction_kobj);
-		compaction_kobj = NULL;
-	}
-}
-#endif
 
 static inline bool kcompactd_work_requested(pg_data_t *pgdat)
 {
@@ -2955,8 +2895,6 @@ static int __init kcompactd_init(void)
 		pr_err("kcompactd: failed to register hotplug callbacks.\n");
 		return ret;
 	}
-
-	compaction_sysfs_init();
 
 	for_each_node_state(nid, N_MEMORY)
 		kcompactd_run(nid);
