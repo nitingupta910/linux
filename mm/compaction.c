@@ -1881,9 +1881,7 @@ static int fragmentation_score_zone(struct zone *zone)
 
 	score = zone->present_pages *
 			extfrag_for_order(zone, HUGETLB_PAGE_ORDER);
-	score = div64_ul(score,
-			node_present_pages(zone->zone_pgdat->node_id) + 1);
-	return score;
+	return div64_ul(score, zone->zone_pgdat->node_present_pages + 1);
 }
 
 /*
@@ -2401,7 +2399,6 @@ static enum compact_result compact_zone_order(struct zone *zone, int order,
 		.alloc_flags = alloc_flags,
 		.classzone_idx = classzone_idx,
 		.direct_compaction = true,
-		.proactive_compaction = false,
 		.whole_zone = (prio == MIN_COMPACT_PRIORITY),
 		.ignore_skip_hint = (prio == MIN_COMPACT_PRIORITY),
 		.ignore_block_suitable = (prio == MIN_COMPACT_PRIORITY)
@@ -2524,7 +2521,6 @@ static void proactive_compact_node(pg_data_t *pgdat)
 		.ignore_skip_hint = true,
 		.whole_zone = true,
 		.gfp_mask = GFP_KERNEL,
-		.direct_compaction = false,
 		.proactive_compaction = true,
 	};
 
@@ -2554,8 +2550,6 @@ static void compact_node(int nid)
 		.ignore_skip_hint = true,
 		.whole_zone = true,
 		.gfp_mask = GFP_KERNEL,
-		.direct_compaction = false,
-		.proactive_compaction = false,
 	};
 
 	for (zoneid = 0; zoneid < MAX_NR_ZONES; zoneid++) {
@@ -2677,8 +2671,6 @@ static void kcompactd_do_work(pg_data_t *pgdat)
 		.mode = MIGRATE_SYNC_LIGHT,
 		.ignore_skip_hint = false,
 		.gfp_mask = GFP_KERNEL,
-		.direct_compaction = false,
-		.proactive_compaction = false,
 	};
 	trace_mm_compaction_kcompactd_wake(pgdat->node_id, cc.order,
 							cc.classzone_idx);
