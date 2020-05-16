@@ -1880,7 +1880,7 @@ static int fragmentation_score_zone(struct zone *zone)
 	unsigned long score;
 
 	score = zone->present_pages *
-			extfrag_for_order(zone, HUGETLB_PAGE_ORDER);
+			extfrag_for_order(zone, HPAGE_PMD_ORDER);
 	return div64_ul(score, zone->zone_pgdat->node_present_pages + 1);
 }
 
