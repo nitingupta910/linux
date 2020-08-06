@@ -226,8 +226,8 @@ static int mpol_new_bind(struct mempolicy *pol, const nodemask_t *nodes)
  * Must be called holding task's alloc_lock to protect task's mems_allowed
  * and mempolicy.  May also be called holding the mmap_lock for write.
  */
-static int mpol_set_nodemask(struct mempolicy *pol,
-		     const nodemask_t *nodes, struct nodemask_scratch *nsc)
+int mpol_set_nodemask(struct mempolicy *pol,
+		      const nodemask_t *nodes, struct nodemask_scratch *nsc)
 {
 	int ret;
 
@@ -260,13 +260,14 @@ static int mpol_set_nodemask(struct mempolicy *pol,
 		ret = mpol_ops[pol->mode].create(pol, NULL);
 	return ret;
 }
+EXPORT_SYMBOL(mpol_set_nodemask);
 
 /*
  * This function just creates a new policy, does some check and simple
  * initialization. You must invoke mpol_set_nodemask() to set nodes.
  */
-static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
-				  nodemask_t *nodes)
+struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+			   nodemask_t *nodes)
 {
 	struct mempolicy *policy;
 
@@ -308,6 +309,7 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
 
 	return policy;
 }
+EXPORT_SYMBOL(mpol_new);
 
 /* Slow path of a mpol destructor. */
 void __mpol_put(struct mempolicy *p)
@@ -316,6 +318,7 @@ void __mpol_put(struct mempolicy *p)
 		return;
 	kmem_cache_free(policy_cache, p);
 }
+EXPORT_SYMBOL(__mpol_put);
 
 static void mpol_rebind_default(struct mempolicy *pol, const nodemask_t *nodes)
 {
